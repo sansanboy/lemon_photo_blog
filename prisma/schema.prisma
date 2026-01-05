@@ -1,0 +1,59 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Album {
+  id        String   @id @default(cuid())
+  title     String
+  slug      String   @unique
+  coverId   String?  @unique
+  cover     Photo?   @relation("AlbumCover", fields: [coverId], references: [id])
+  photos    Photo[]  @relation("AlbumPhotos")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Photo {
+  id          String       @id @default(cuid())
+  albumId     String?
+  album       Album?       @relation("AlbumPhotos", fields: [albumId], references: [id])
+  albumCover  Album?       @relation("AlbumCover")
+  url         String
+  r2Key       String
+  thumbnailUrl String?
+  title       String?
+  description String?
+  order       Int          @default(0)
+  tags        TagOnPhoto[]
+  exif        Json?
+  takenAt     DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model Tag {
+  id     String   @id @default(cuid())
+  name   String       @unique
+  photos TagOnPhoto[]
+}
+
+model TagOnPhoto {
+  photoId String
+  tagId   String
+  photo   Photo @relation(fields: [photoId], references: [id])
+  tag     Tag   @relation(fields: [tagId], references: [id])
+
+  @@id([photoId, tagId])
+}
+
+model Admin {
+  id        String   @id @default(cuid())
+  username  String   @unique
+  password  String
+  createdAt DateTime @default(now())
+}
