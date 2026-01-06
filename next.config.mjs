@@ -8,15 +8,10 @@ const nextConfig = {
             },
         ],
     },
-    outputFileTracing: true,
-    outputFileTracingExcludes: {
-        "*": [
-            "**/.git/**",
-            "**/.next/**",
-            "**/node_modules/**",
-            "**/prisma/migrations/**",
-        ],
-    },
+    output: "standalone",
+
+    // 必须关，否则必炸
+    outputFileTracing: false,
 };
 
 export default nextConfig;
