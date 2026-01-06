@@ -129,7 +129,16 @@ export default function AdminPage() {
   // 处理文件上传
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      setFormData(prev => ({ ...prev, file: e.target.files![0] }));
+      const file = e.target.files[0];
+      const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+
+      if (file.size > MAX_SIZE) {
+        alert(`文件大小超过10MB，请选择更小的文件`);
+        e.target.value = ''; // 清空选择
+        return;
+      }
+
+      setFormData(prev => ({ ...prev, file }));
     }
   };
 
