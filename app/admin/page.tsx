@@ -42,7 +42,7 @@ export default function AdminPage() {
       const res = await fetch("/api/albums");
       if (res.ok) {
         const data = await res.json();
-        setAlbums(data);
+        setAlbums(data.albums || []);
       }
     } catch (error) {
       console.error("获取相册列表失败:", error);

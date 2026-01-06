@@ -44,7 +44,7 @@ export default async function Home({
   searchParams: { tag?: string };
 }) {
   const tag = searchParams.tag;
-  const { photos, tags } = await getPhotos(tag);
+  const { photos, tags } = await getPhotos({ tag });
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
