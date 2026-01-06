@@ -3,7 +3,6 @@
   "devCommand": "yarn dev",
   "installCommand": "yarn install",
   "framework": "nextjs",
-  "ignoreCommand": "echo 'Building without upload'",
   "functions": {
     "api/**/*.ts": {
       "memory": 1024
