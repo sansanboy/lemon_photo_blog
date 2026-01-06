@@ -8,7 +8,15 @@ const nextConfig = {
             },
         ],
     },
-    outputFileTracing: false,
+    outputFileTracing: true,
+    outputFileTracingExcludes: {
+        "*": [
+            "**/.git/**",
+            "**/.next/**",
+            "**/node_modules/**",
+            "**/prisma/migrations/**",
+        ],
+    },
 };
 
 export default nextConfig;
