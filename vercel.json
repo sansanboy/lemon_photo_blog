@@ -1,6 +1,6 @@
 {
-  "buildCommand": "npx next build",
-  "env": {
-    "NODE_ENV": "production"
-  }
+    "buildCommand": "prisma generate && npx next build",
+    "env": {
+        "NODE_ENV": "production"
+    }
 }
