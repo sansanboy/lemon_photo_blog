@@ -46,8 +46,6 @@ export async function GET(request: NextRequest) {
         tag: {
           id: photoTag.tag.id,
           name: photoTag.tag.name,
-          createdAt: photoTag.tag.createdAt,
-          updatedAt: photoTag.tag.updatedAt,
         },
       })),
     }));
