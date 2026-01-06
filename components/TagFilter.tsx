@@ -16,9 +16,9 @@ export function TagFilter({ tags, currentTag }: TagFilterProps) {
       <Link
         href="/"
         className={`px-4 py-2 rounded-full border text-sm transition-colors ${
-          !currentTag 
-            ? "bg-blue-600 border-blue-600 text-white" 
-            : "border-gray-700 text-gray-300 hover:bg-gray-800"
+          !currentTag
+            ? "bg-blue-600 border-blue-600 text-white"
+            : "border-gray-300 text-gray-700 hover:bg-gray-100"
         }`}
       >
         全部
@@ -29,8 +29,8 @@ export function TagFilter({ tags, currentTag }: TagFilterProps) {
           href={`/?tag=${encodeURIComponent(tag.name)}`}
           className={`px-4 py-2 rounded-full border text-sm transition-colors ${
             currentTag === tag.name
-              ? "bg-blue-600 border-blue-600 text-white" 
-              : "border-gray-700 text-gray-300 hover:bg-gray-800"
+              ? "bg-blue-600 border-blue-600 text-white"
+              : "border-gray-300 text-gray-700 hover:bg-gray-100"
           }`}
         >
           {tag.name}

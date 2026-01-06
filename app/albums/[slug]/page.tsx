@@ -21,15 +21,15 @@ export default async function AlbumDetailPage({ params }: Props) {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-4">
-      <div className="mb-12 text-center">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="mb-16 md:mb-20 text-center">
         <h1 className="page-title text-gradient">{album.title}</h1>
         <p className="page-subtitle">
           {album.photos.length} 张照片 · 创建于 {new Date(album.createdAt).toLocaleDateString('zh-CN')}
         </p>
       </div>
-      
-      <div className="photo-grid">
+
+      <div className="flex flex-col">
         <PhotoGrid photos={album.photos} />
       </div>
     </div>

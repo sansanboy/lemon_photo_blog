@@ -150,21 +150,21 @@ export default function AdminPage() {
 
   if (!isLoggedIn) {
     return (
-      <div className="max-w-md mx-auto p-8 bg-gray-800 rounded-2xl mt-20 shadow-2xl">
+      <div className="max-w-md mx-auto p-8 bg-white rounded-2xl mt-20 shadow-2xl border border-gray-200">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-gradient">管理员登录</h1>
-          <p className="text-gray-400 mt-2">请输入您的凭据</p>
+          <p className="text-gray-500 mt-2">请输入您的凭据</p>
         </div>
-        
+
         {error && (
-          <div className="mb-6 p-3 bg-red-900/50 text-red-200 rounded-lg text-center">
+          <div className="mb-6 p-3 bg-red-50 text-red-700 rounded-lg text-center border border-red-200">
             {error}
           </div>
         )}
-        
+
         <form onSubmit={handleLogin} className="space-y-5">
           <div>
-            <label className="block text-sm text-gray-300 mb-2">用户名</label>
+            <label className="block text-sm text-gray-700 mb-2">用户名</label>
             <input
               type="text"
               value={loginForm.username}
@@ -175,7 +175,7 @@ export default function AdminPage() {
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-300 mb-2">密码</label>
+            <label className="block text-sm text-gray-700 mb-2">密码</label>
             <input
               type="password"
               value={loginForm.password}
@@ -199,14 +199,14 @@ export default function AdminPage() {
   return (
     <div className="max-w-6xl mx-auto px-4">
       <div className="mb-12 text-center">
-        <h1 className="page-title text-white">管理后台</h1>
+        <h1 className="page-title">管理后台</h1>
         <p className="page-subtitle">上传和管理您的照片</p>
       </div>
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 mb-12">
         {/* 相册管理 */}
         <div className="card p-6">
-          <h2 className="text-xl font-semibold text-white mb-5">创建新相册</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-5">创建新相册</h2>
           <div className="flex gap-3 mb-8">
             <input
               type="text"
@@ -222,33 +222,33 @@ export default function AdminPage() {
               创建
             </button>
           </div>
-          
+
           <div>
-            <h2 className="text-xl font-semibold text-white mb-5">现有相册</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-5">现有相册</h2>
             {albums.length === 0 ? (
               <p className="text-gray-500 text-center py-4">暂无相册</p>
             ) : (
               <ul className="space-y-4">
                 {albums.map(album => (
-                  <li 
-                    key={album.id} 
-                    className="flex justify-between items-center p-4 bg-gray-800/50 rounded-lg border border-gray-700"
+                  <li
+                    key={album.id}
+                    className="flex justify-between items-center p-4 bg-gray-50 rounded-lg border border-gray-200"
                   >
-                    <span className="text-gray-200">{album.title}</span>
-                    <span className="text-sm text-gray-400">{album.photos?.length || 0} 张照片</span>
+                    <span className="text-gray-900">{album.title}</span>
+                    <span className="text-sm text-gray-500">{album.photos?.length || 0} 张照片</span>
                   </li>
                 ))}
               </ul>
             )}
           </div>
         </div>
-        
+
         {/* 照片上传 */}
         <div className="card p-6">
-          <h2 className="text-xl font-semibold text-white mb-5">上传照片</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-5">上传照片</h2>
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm text-gray-300 mb-2">照片标题</label>
+              <label className="block text-sm text-gray-700 mb-2">照片标题</label>
               <input
                 type="text"
                 name="title"
@@ -258,9 +258,9 @@ export default function AdminPage() {
                 placeholder="可选"
               />
             </div>
-            
+
             <div>
-              <label className="block text-sm text-gray-300 mb-2">选择相册</label>
+              <label className="block text-sm text-gray-700 mb-2">选择相册</label>
               <select
                 name="albumId"
                 value={formData.albumId}
@@ -273,9 +273,9 @@ export default function AdminPage() {
                 ))}
               </select>
             </div>
-            
+
             <div>
-              <label className="block text-sm text-gray-300 mb-2">标签 (逗号分隔)</label>
+              <label className="block text-sm text-gray-700 mb-2">标签 (逗号分隔)</label>
               <input
                 type="text"
                 name="tags"
@@ -285,9 +285,9 @@ export default function AdminPage() {
                 placeholder="风景,自然,人像"
               />
             </div>
-            
+
             <div>
-              <label className="block text-sm text-gray-300 mb-2">选择照片</label>
+              <label className="block text-sm text-gray-700 mb-2">选择照片</label>
               <input
                 type="file"
                 accept="image/*"
@@ -296,13 +296,13 @@ export default function AdminPage() {
                 required
               />
             </div>
-            
+
             <button
               type="submit"
               disabled={uploading || !formData.file}
               className={`w-full btn py-3.5 ${
                 uploading || !formData.file
-                  ? "bg-gray-700 cursor-not-allowed text-gray-400"
+                  ? "bg-gray-200 cursor-not-allowed text-gray-500"
                   : "btn-primary"
               }`}
             >
@@ -311,9 +311,9 @@ export default function AdminPage() {
           </form>
         </div>
       </div>
-      
+
       <div className="card p-6 text-center">
-        <h2 className="text-xl font-semibold text-white mb-5">账户管理</h2>
+        <h2 className="text-xl font-semibold text-gray-900 mb-5">账户管理</h2>
         <button
           onClick={handleLogout}
           className="btn btn-danger inline-flex items-center gap-2"
