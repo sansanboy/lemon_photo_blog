@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 type Tag = {
-  id: number | string;
+  id: string;
   name: string;
 };
 

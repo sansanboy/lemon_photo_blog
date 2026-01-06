@@ -1,10 +1,10 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-}
-
-generator client {
-  provider = "prisma-client-js"
 }
 
 model Album {
@@ -12,32 +12,33 @@ model Album {
   title     String
   slug      String   @unique
   coverId   String?  @unique
-  cover     Photo?   @relation("AlbumCover", fields: [coverId], references: [id])
-  photos    Photo[]  @relation("AlbumPhotos")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  cover     Photo?   @relation("AlbumCover", fields: [coverId], references: [id])
+  photos    Photo[]  @relation("AlbumPhotos")
 }
 
 model Photo {
-  id          String       @id @default(cuid())
-  albumId     String?
-  album       Album?       @relation("AlbumPhotos", fields: [albumId], references: [id])
-  albumCover  Album?       @relation("AlbumCover")
-  url         String
-  r2Key       String
+  id           String       @id @default(cuid())
+  albumId      String?
+  url          String
+  r2Key        String
+  title        String?
+  description  String?
+  order        Int          @default(0)
+  exif         Json?
+  takenAt      DateTime?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
   thumbnailUrl String?
-  title       String?
-  description String?
-  order       Int          @default(0)
-  tags        TagOnPhoto[]
-  exif        Json?
-  takenAt     DateTime?
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  status       PhotoStatus  @default(PUBLISHED)
+  albumCover   Album?       @relation("AlbumCover")
+  album        Album?       @relation("AlbumPhotos", fields: [albumId], references: [id])
+  tags         TagOnPhoto[]
 }
 
 model Tag {
-  id     String   @id @default(cuid())
+  id     String       @id @default(cuid())
   name   String       @unique
   photos TagOnPhoto[]
 }
@@ -45,8 +46,8 @@ model Tag {
 model TagOnPhoto {
   photoId String
   tagId   String
-  photo   Photo @relation(fields: [photoId], references: [id])
-  tag     Tag   @relation(fields: [tagId], references: [id])
+  photo   Photo  @relation(fields: [photoId], references: [id])
+  tag     Tag    @relation(fields: [tagId], references: [id])
 
   @@id([photoId, tagId])
 }
@@ -56,4 +57,10 @@ model Admin {
   username  String   @unique
   password  String
   createdAt DateTime @default(now())
+}
+
+enum PhotoStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
 }

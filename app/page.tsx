@@ -20,14 +20,23 @@ type Photo = {
   takenAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
+  status: string;
+  album: {
+    id: string;
+    title: string;
+  } | null;
   tags: {
     tag: Tag;
   }[];
 };
 
 async function getPhotos({ tag }: { tag?: string } = {}) {
-  const params = tag ? `?tag=${tag}` : '';
-  const res = await fetch(new URL(`/api/photos${params}`, process.env.NEXT_PUBLIC_BASE_URL || process.env.VERCEL_URL || 'http://localhost:3000').toString(), {
+  const params = new URLSearchParams();
+  if (tag) params.append('tag', tag);
+  params.append('status', 'PUBLISHED'); // 只获取已发布的照片
+  const queryString = params.toString();
+  
+  const res = await fetch(new URL(`/api/photos?${queryString}`, process.env.NEXT_PUBLIC_BASE_URL || process.env.VERCEL_URL || 'http://localhost:3000').toString(), {
     next: { revalidate: 3600 } // 1 hour cache
   });
   

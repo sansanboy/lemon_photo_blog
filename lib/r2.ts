@@ -1,4 +1,4 @@
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { PutObjectCommand, S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import sharp from "sharp";
 import { Readable } from "stream";
@@ -121,6 +121,25 @@ export async function generateThumbnail(
     .resize(300, 300, { fit: "inside", withoutEnlargement: true })
     .jpeg({ quality: 80 })
     .toBuffer();
+}
+
+// 删除R2中的文件
+export async function deleteFromR2(key: string) {
+  if (
+    !R2_ACCOUNT_ID ||
+    !R2_ACCESS_KEY_ID ||
+    !R2_SECRET_ACCESS_KEY ||
+    !R2_BUCKET
+  ) {
+    throw new Error("R2 configuration is missing");
+  }
+
+  const command = new DeleteObjectCommand({
+    Bucket: R2_BUCKET,
+    Key: key,
+  });
+
+  await r2Client.send(command);
 }
 
 // 生成预签名URL（如果需要）
