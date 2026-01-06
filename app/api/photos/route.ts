@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     // 获取EXIF信息
     const arrayBuffer = await file.arrayBuffer();
     const exifData = await getExifData(Buffer.from(arrayBuffer));
-    
+
     // 创建照片记录
     const photo = await prisma.photo.create({
       data: {
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
         url: originalUrl,
         r2Key: originalKey,
         thumbnailUrl,
-        exif: exifData,
+        exif: exifData ? JSON.parse(JSON.stringify(exifData)) : undefined,
         takenAt: exifData?.takenAt || new Date(),
         albumId: albumId || null,
         order: 0 // 默认顺序，后续可调整
