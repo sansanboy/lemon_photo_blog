@@ -9,20 +9,16 @@ type Album = {
   id: string;
   title: string;
   slug: string;
-  description: string | null;
   coverId: string | null;
   createdAt: Date;
   updatedAt: Date;
   photos: {
     id: string;
-    filename: string;
-    originalName: string;
+    title: string | null;
     url: string;
-    thumbnailUrl: string;
+    thumbnailUrl: string | null;
     takenAt: Date | null;
-    createdAt: Date;
-    updatedAt: Date;
-    order: number;
+    exif: any;
   }[];
 };
 
