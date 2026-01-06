@@ -10,8 +10,8 @@ const nextConfig = {
     },
     output: "standalone",
 
-    // 禁用输出文件追踪以避免RangeError: Maximum call stack size exceeded
-    outputFileTracing: false,
+    // 使用默认的outputFileTracing行为，不显式设置
+    // outputFileTracing: true,  // 注释掉，使用默认值
     
     experimental: {
         serverComponentsExternalPackages: [
@@ -23,14 +23,19 @@ const nextConfig = {
         typedRoutes: false,
     },
     
-    // 使用webpack配置来确保依赖被正确处理
+    // 通过webpack配置处理外部依赖
     webpack: (config, { isServer }) => {
         if (isServer) {
+            // 避免在服务器端打包这些包
             config.externals = [
-                ...config.externals,
-                /node_modules\/(sharp|exifr|@aws-sdk|argon2)/
+                ...(config.externals || []),
+                "sharp",
+                "exifr",
+                "@aws-sdk",
+                "argon2"
             ];
         }
+        
         return config;
     }
 };
