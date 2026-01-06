@@ -1,11 +1,4 @@
 {
-  "settings": {
-    "maxDuration": 30,
-    "includeFiles": [
-      ".next/server/**",
-      ".next/static/**"
-    ]
-  },
   "functions": {
     "app/page.tsx": {
       "maxDuration": 30
