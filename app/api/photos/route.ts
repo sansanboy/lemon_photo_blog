@@ -140,45 +140,94 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+ export async function POST(request: NextRequest) {
   try {
     requireAdmin();
-    
-    const formData = await request.formData();
-    const file = formData.get("file") as File | null;
-    const title = formData.get("title") as string;
-    const albumId = formData.get("albumId") as string;
-    const tagsString = formData.get("tags") as string;
-    const statusParam = formData.get("status") as string || "PUBLISHED";
-    
-    if (!file) {
-      return Response.json({ error: "No file provided" }, { status: 400 });
-    }
-    
-    // 验证status值是否为有效值
-    const validStatuses = ["DRAFT", "PUBLISHED", "ARCHIVED"];
-    if (!validStatuses.includes(statusParam)) {
-      return Response.json({ error: "Invalid status value" }, { status: 400 });
-    }
-    
-    // 上传原图到R2
-    const originalKey = `photos/${Date.now()}_${file.name}`;
-    const originalUrl = await uploadToR2(originalKey, file);
-    
-    // 生成缩略图
-    const thumbnailKey = `thumbnails/${Date.now()}_${file.name}`;
-    const thumbnailBuffer = await generateThumbnail(file);
-    const thumbnailUrl = await uploadToR2(thumbnailKey, thumbnailBuffer, "image/jpeg");
-    
-    // 获取EXIF信息
-    const arrayBuffer = await file.arrayBuffer();
-    const exifData = await getExifData(Buffer.from(arrayBuffer));
+
+    const contentType = request.headers.get("content-type") || "";
+
+    if (contentType.includes("multipart/form-data")) {
+      const formData = await request.formData();
+      const file = formData.get("file") as File | null;
+      const title = formData.get("title") as string;
+      const albumId = formData.get("albumId") as string;
+      const tagsString = formData.get("tags") as string;
+      const statusParam = formData.get("status") as string || "PUBLISHED";
+
+      if (!file) {
+        return Response.json({ error: "No file provided" }, { status: 400 });
+      }
+
+      const validStatuses = ["DRAFT", "PUBLISHED", "ARCHIVED"];
+      if (!validStatuses.includes(statusParam)) {
+        return Response.json({ error: "Invalid status value" }, { status: 400 });
+      }
+
+      const originalKey = `photos/${Date.now()}_${file.name}`;
+      const originalUrl = await uploadToR2(originalKey, file);
+
+      const thumbnailKey = `thumbnails/${Date.now()}_${file.name}`;
+      const thumbnailBuffer = await generateThumbnail(file);
+      const thumbnailUrl = await uploadToR2(thumbnailKey, thumbnailBuffer, "image/jpeg");
+
+      const arrayBuffer = await file.arrayBuffer();
+      const exifData = await getExifData(Buffer.from(arrayBuffer));
+
+      const photo = await prisma.$transaction(async (tx) => {
+        const connectOrCreateTags = tagsString
+          ? tagsString
+              .split(",")
+              .map((tag) => tag.trim())
+              .filter((tag) => tag)
+              .map((tagName) => ({
+                tag: {
+                  connectOrCreate: {
+                    where: { name: tagName },
+                    create: { name: tagName },
+                  },
+                },
+              }))
+          : [];
+
+        return await tx.photo.create({
+          data: {
+            title: title || null,
+            url: originalUrl,
+            r2Key: originalKey,
+            thumbnailUrl,
+            exif: exifData ? JSON.parse(JSON.stringify(exifData)) : undefined,
+            takenAt: exifData?.takenAt || new Date(),
+            albumId: albumId || null,
+            status: statusParam as "DRAFT" | "PUBLISHED" | "ARCHIVED",
+            order: 0,
+            tags: {
+              create: connectOrCreateTags,
+            },
+          },
+        });
+      });
+
+      return Response.json(photo);
+    } else {
+      const data = await request.json();
+      const { url, key, title, albumId, tags, thumbnailUrl, thumbnailKey, exifData } = data;
+
+      if (!url || !key) {
+        return Response.json({ error: "URL and key are required" }, { status: 400 });
+      }
+
+      const statusParam = data.status as string || "PUBLISHED";
+
+      const validStatuses = ["DRAFT", "PUBLISHED", "ARCHIVED"];
+      if (!validStatuses.includes(statusParam)) {
+        return Response.json({ error: "Invalid status value" }, { status: 400 });
+      }
 
     // 使用事务来确保数据一致性
     const photo = await prisma.$transaction(async (tx) => {
       // 创建或获取标签，并关联到照片
-      const connectOrCreateTags = tagsString
-        ? tagsString
+      const connectOrCreateTags = tags
+        ? tags
             .split(",")
             .map((tag) => tag.trim())
             .filter((tag) => tag)
@@ -196,8 +245,8 @@ export async function POST(request: NextRequest) {
       return await tx.photo.create({
         data: {
           title: title || null,
-          url: originalUrl,
-          r2Key: originalKey,
+          url,
+          r2Key: key,
           thumbnailUrl,
           exif: exifData ? JSON.parse(JSON.stringify(exifData)) : undefined,
           takenAt: exifData?.takenAt || new Date(),
@@ -213,8 +262,8 @@ export async function POST(request: NextRequest) {
     
     return Response.json(photo);
   } catch (error) {
-    console.error("Upload error:", error);
-    return Response.json({ error: "Upload failed" }, { status: 500 });
+    console.error("Save photo error:", error);
+    return Response.json({ error: "Failed to save photo" }, { status: 500 });
   }
 }
 

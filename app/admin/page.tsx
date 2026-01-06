@@ -142,30 +142,31 @@ export default function AdminPage() {
     }
   };
 
-  // 提交照片上传
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.file) return;
-    
+
     setUploading(true);
-    
-    const data = new FormData();
-    data.append("file", formData.file);
-    if (formData.title) data.append("title", formData.title);
-    if (formData.albumId) data.append("albumId", formData.albumId);
-    if (formData.tags) data.append("tags", formData.tags);
-    data.append("status", formData.status); // 添加状态字段
-    
+
     try {
-      const result = await fetch("/api/photos", {
-        method: "POST",
-        body: data,
+      const file = formData.file;
+
+      const fileFormData = new FormData();
+      fileFormData.append('file', file);
+      if (formData.title) fileFormData.append('title', formData.title);
+      if (formData.albumId) fileFormData.append('albumId', formData.albumId);
+      if (formData.tags) fileFormData.append('tags', formData.tags);
+      fileFormData.append('status', formData.status);
+
+      const result = await fetch('/api/photos', {
+        method: 'POST',
+        body: fileFormData
       });
-      
+
       if (result.ok) {
         alert("照片上传成功！");
         setFormData({ title: "", albumId: "", tags: "", status: "PUBLISHED", file: null });
-        fetchPhotos(); // 重新获取照片列表
+        fetchPhotos();
       } else {
         alert("照片上传失败！");
       }
