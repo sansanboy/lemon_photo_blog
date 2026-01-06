@@ -1,0 +1,16 @@
+{
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm install",
+  "framework": "nextjs",
+  "ignoreCommand": "echo 'Building without upload'",
+  "functions": {
+    "api/**/*.ts": {
+      "memory": 1024
+    }
+  },
+  "env": {
+    "NODE_ENV": "production",
+    "NODE_OPTIONS": "--max-old-space-size=4096"
+  }
+}
