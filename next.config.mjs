@@ -10,10 +10,9 @@ const nextConfig = {
     },
     output: "standalone",
 
-    // 启用输出文件追踪以确保Vercel部署时包含所有必要文件
+    // 重新启用输出文件追踪，但使用更精确的排除规则
     outputFileTracing: true,
     
-    // 添加额外配置以避免循环引用问题
     experimental: {
         serverComponentsExternalPackages: [
             "sharp",
@@ -21,16 +20,22 @@ const nextConfig = {
             "@aws-sdk",
             "argon2"
         ],
-        // 禁用某些可能导致循环引用的实验性功能
-        typedRoutes: false,
+        // 确保使用最新的RSC功能配置
+        serverComponentsHmrForcedExternalPackages: [
+            "sharp",
+            "exifr",
+            "@aws-sdk",
+            "argon2"
+        ]
     },
     
-    // 排除可能引起问题的文件类型
-    outputFileTracingExcludes: {
-        "*": [
-            "node_modules/@swc/**/*",
-            "node_modules/@next/env",
-            "node_modules/webpack/**/*"
+    // 精确排除可能引起问题的文件
+    outputFileTracingIncludes: {
+        "app/api/**/*": [
+            "./node_modules/sharp/**/*",
+            "./node_modules/@aws-sdk/**/*",
+            "./node_modules/argon2/**/*",
+            "./node_modules/exifr/**/*"
         ]
     }
 };
