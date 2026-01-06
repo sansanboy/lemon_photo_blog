@@ -9,8 +9,8 @@ const nextConfig = {
         ],
     },
     output: "standalone",
-
-    // 禁用输出文件追踪以避免RangeError: Maximum call stack size exceeded
+    
+    // 完全禁用输出文件追踪以避免循环引用
     outputFileTracing: false,
     
     experimental: {
@@ -22,7 +22,6 @@ const nextConfig = {
         ],
     },
     
-    // 使用webpack配置处理外部依赖
     webpack: (config, { isServer }) => {
         if (isServer) {
             config.externals = [
