@@ -26,20 +26,16 @@ export async function GET(request: Request, { params }: Props) {
       id: album.id,
       title: album.title,
       slug: album.slug,
-      description: album.description,
       coverId: album.coverId,
       createdAt: album.createdAt,
       updatedAt: album.updatedAt,
       photos: album.photos.map(photo => ({
         id: photo.id,
-        filename: photo.filename,
-        originalName: photo.originalName,
+        title: photo.title,
         url: photo.url,
         thumbnailUrl: photo.thumbnailUrl,
         takenAt: photo.takenAt,
-        createdAt: photo.createdAt,
-        updatedAt: photo.updatedAt,
-        order: photo.order,
+        exif: photo.exif,
       }))
     };
 
