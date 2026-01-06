@@ -34,7 +34,7 @@ type Album = {
 };
 
 async function getAlbums() {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/albums`, {
+  const res = await fetch(new URL('/api/albums', process.env.NEXT_PUBLIC_BASE_URL || process.env.VERCEL_URL || 'http://localhost:3000').toString(), {
     next: { revalidate: 3600 } // 1 hour cache
   });
   

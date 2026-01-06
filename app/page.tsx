@@ -25,9 +25,9 @@ type Photo = {
   }[];
 };
 
-async function getPhotos(tag?: string) {
-  const params = tag ? `?tag=${encodeURIComponent(tag)}` : '';
-  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/photos${params}`, {
+async function getPhotos({ tag }: { tag?: string } = {}) {
+  const params = tag ? `?tag=${tag}` : '';
+  const res = await fetch(new URL(`/api/photos${params}`, process.env.NEXT_PUBLIC_BASE_URL || process.env.VERCEL_URL || 'http://localhost:3000').toString(), {
     next: { revalidate: 3600 } // 1 hour cache
   });
   

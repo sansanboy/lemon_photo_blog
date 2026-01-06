@@ -23,7 +23,7 @@ type Album = {
 };
 
 async function getAlbum(slug: string) {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/albums/${slug}`, {
+  const res = await fetch(new URL(`/api/albums/${slug}`, process.env.NEXT_PUBLIC_BASE_URL || process.env.VERCEL_URL || 'http://localhost:3000').toString(), {
     next: { revalidate: 3600 } // 1 hour cache
   });
   
