@@ -62,7 +62,7 @@ export default async function AlbumsPage() {
         </div>
       ) : (
         <div className="grid gap-6 grid-cols-1 sm:grid-cols-2">
-          {albums.map((album) => {
+          {albums.map((album: Album) => {
             const fallbackCover = album.photos[0] ?? null;
             const coverPhoto = album.cover ?? fallbackCover;
 
