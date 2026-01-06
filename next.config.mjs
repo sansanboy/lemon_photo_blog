@@ -10,8 +10,8 @@ const nextConfig = {
     },
     output: "standalone",
 
-    // 重新启用输出文件追踪，但使用更精确的排除规则
-    outputFileTracing: true,
+    // 禁用输出文件追踪以避免RangeError: Maximum call stack size exceeded
+    outputFileTracing: false,
     
     experimental: {
         serverComponentsExternalPackages: [
@@ -20,23 +20,18 @@ const nextConfig = {
             "@aws-sdk",
             "argon2"
         ],
-        // 确保使用最新的RSC功能配置
-        serverComponentsHmrForcedExternalPackages: [
-            "sharp",
-            "exifr",
-            "@aws-sdk",
-            "argon2"
-        ]
+        typedRoutes: false,
     },
     
-    // 精确排除可能引起问题的文件
-    outputFileTracingIncludes: {
-        "app/api/**/*": [
-            "./node_modules/sharp/**/*",
-            "./node_modules/@aws-sdk/**/*",
-            "./node_modules/argon2/**/*",
-            "./node_modules/exifr/**/*"
-        ]
+    // 使用webpack配置来确保依赖被正确处理
+    webpack: (config, { isServer }) => {
+        if (isServer) {
+            config.externals = [
+                ...config.externals,
+                /node_modules\/(sharp|exifr|@aws-sdk|argon2)/
+            ];
+        }
+        return config;
     }
 };
 
