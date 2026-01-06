@@ -4,7 +4,26 @@ type PhotoWithExif = {
     url: string;
     thumbnailUrl?: string | null;
     takenAt?: Date | string | null;
-    exif?: {
+    exif?: any;
+};
+
+type PhotoGridProps = {
+    photos: PhotoWithExif[];
+};
+
+// Helper function to safely extract EXIF data
+function getExifData(exif: any): {
+    camera?: string | null;
+    lens?: string | null;
+    iso?: number | null;
+    shutter?: number | string | null;
+    aperture?: number | null;
+    focalLength?: number | null;
+} | null {
+    if (!exif || typeof exif !== 'object') {
+        return null;
+    }
+    return exif as {
         camera?: string | null;
         lens?: string | null;
         iso?: number | null;
@@ -12,11 +31,7 @@ type PhotoWithExif = {
         aperture?: number | null;
         focalLength?: number | null;
     } | null;
-};
-
-type PhotoGridProps = {
-    photos: PhotoWithExif[];
-};
+}
 
 export function PhotoGrid({ photos }: PhotoGridProps) {
     if (!photos.length) {
@@ -32,6 +47,7 @@ export function PhotoGrid({ photos }: PhotoGridProps) {
         <>
             {photos.map((photo, index) => {
                 const isEven = index % 2 === 0;
+                const exifData = getExifData(photo.exif);
                 return (
                     <article
                         key={photo.id}
@@ -64,54 +80,54 @@ export function PhotoGrid({ photos }: PhotoGridProps) {
                                     </p>
                                 )}
 
-                                {(photo.exif?.camera || photo.exif?.lens) && (
+                                {(exifData?.camera || exifData?.lens) && (
                                     <div className="photo-equipment">
-                                        {photo.exif?.camera && (
+                                        {exifData?.camera && (
                                             <div className="exif-item">
                                                 <span className="exif-label">
                                                     相机
                                                 </span>
                                                 <span className="exif-value">
-                                                    {photo.exif.camera}
+                                                    {exifData.camera}
                                                 </span>
                                             </div>
                                         )}
-                                        {photo.exif?.lens && (
+                                        {exifData?.lens && (
                                             <div className="exif-item">
                                                 <span className="exif-label">
                                                     镜头
                                                 </span>
                                                 <span className="exif-value">
-                                                    {photo.exif.lens}
+                                                    {exifData.lens}
                                                 </span>
                                             </div>
                                         )}
                                     </div>
                                 )}
 
-                                {(photo.exif?.iso ||
-                                    photo.exif?.aperture ||
-                                    photo.exif?.shutter ||
-                                    photo.exif?.focalLength) && (
+                                {(exifData?.iso ||
+                                    exifData?.aperture ||
+                                    exifData?.shutter ||
+                                    exifData?.focalLength) && (
                                     <div className="photo-exif">
-                                        {photo.exif?.iso && (
+                                        {exifData?.iso && (
                                             <span className="exif-tag">
-                                                ISO {photo.exif.iso}
+                                                ISO {exifData.iso}
                                             </span>
                                         )}
-                                        {photo.exif?.aperture && (
+                                        {exifData?.aperture && (
                                             <span className="exif-tag">
-                                                f/{photo.exif.aperture}
+                                                f/{exifData.aperture}
                                             </span>
                                         )}
-                                        {photo.exif?.shutter && (
+                                        {exifData?.shutter && (
                                             <span className="exif-tag">
-                                                {photo.exif.shutter}s
+                                                {exifData.shutter}s
                                             </span>
                                         )}
-                                        {photo.exif?.focalLength && (
+                                        {exifData?.focalLength && (
                                             <span className="exif-tag">
-                                                {photo.exif.focalLength}mm
+                                                {exifData.focalLength}mm
                                             </span>
                                         )}
                                     </div>
