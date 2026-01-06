@@ -3,11 +3,6 @@
   "devCommand": "yarn dev",
   "installCommand": "yarn install",
   "framework": "nextjs",
-  "functions": {
-    "api/**/*.ts": {
-      "memory": 1024
-    }
-  },
   "env": {
     "NODE_ENV": "production",
     "NODE_OPTIONS": "--max-old-space-size=4096"
