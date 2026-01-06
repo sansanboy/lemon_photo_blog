@@ -10,8 +10,8 @@ const nextConfig = {
     },
     output: "standalone",
 
-    // 使用默认的outputFileTracing行为，不显式设置
-    // outputFileTracing: true,  // 注释掉，使用默认值
+    // 禁用输出文件追踪以避免RangeError: Maximum call stack size exceeded
+    outputFileTracing: false,
     
     experimental: {
         serverComponentsExternalPackages: [
@@ -20,13 +20,11 @@ const nextConfig = {
             "@aws-sdk",
             "argon2"
         ],
-        typedRoutes: false,
     },
     
-    // 通过webpack配置处理外部依赖
+    // 使用webpack配置处理外部依赖
     webpack: (config, { isServer }) => {
         if (isServer) {
-            // 避免在服务器端打包这些包
             config.externals = [
                 ...(config.externals || []),
                 "sharp",
