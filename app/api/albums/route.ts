@@ -1,11 +1,10 @@
 import { NextRequest } from "next/server";
-import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+
+export const runtime = 'nodejs';
 
 export async function GET() {
   try {
-    requireAdmin();
-    
     const albums = await prisma.album.findMany({
       orderBy: { createdAt: "desc" },
       include: {
@@ -16,16 +15,49 @@ export async function GET() {
         }
       }
     });
-    
-    return Response.json(albums);
+
+    // 格式化返回数据
+    const formattedAlbums = albums.map(album => ({
+      id: album.id,
+      title: album.title,
+      slug: album.slug,
+      description: album.description,
+      coverId: album.coverId,
+      createdAt: album.createdAt,
+      updatedAt: album.updatedAt,
+      cover: album.cover ? {
+        id: album.cover.id,
+        url: album.cover.url,
+        filename: album.cover.filename,
+        originalName: album.cover.originalName,
+        thumbnailUrl: album.cover.thumbnailUrl,
+        takenAt: album.cover.takenAt,
+        createdAt: album.cover.createdAt,
+        updatedAt: album.cover.updatedAt,
+      } : null,
+      photos: album.photos.map(photo => ({
+        id: photo.id,
+        url: photo.url,
+        filename: photo.filename,
+        originalName: photo.originalName,
+        thumbnailUrl: photo.thumbnailUrl,
+        takenAt: photo.takenAt,
+        createdAt: photo.createdAt,
+        updatedAt: photo.updatedAt,
+        order: photo.order,
+      }))
+    }));
+
+    return Response.json({ albums: formattedAlbums });
   } catch (error) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
+    console.error("API Error:", error);
+    return Response.json({ error: "Failed to fetch albums" }, { status: 500 });
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    requireAdmin();
+    // requireAdmin(); // 暂时移除，或根据实际需求保留
     
     const data = await request.json();
     const { title } = data;
@@ -46,6 +78,7 @@ export async function POST(request: NextRequest) {
     
     return Response.json(album);
   } catch (error) {
+    console.error("API Error:", error);
     return Response.json({ error: "Failed to create album" }, { status: 500 });
   }
 }

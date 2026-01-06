@@ -1,4 +1,3 @@
-import { prisma } from "@/lib/db";
 import { notFound } from "next/navigation";
 import { PhotoGrid } from "@/components/PhotoGrid";
 
@@ -6,19 +5,50 @@ type Props = {
   params: { slug: string };
 };
 
-export default async function AlbumDetailPage({ params }: Props) {
-  const album = await prisma.album.findUnique({
-    where: { slug: params.slug },
-    include: {
-      photos: {
-        orderBy: [{ order: "asc" }, { takenAt: "desc" }, { createdAt: "desc" }]
-      }
-    }
-  });
+type Album = {
+  id: string;
+  title: string;
+  slug: string;
+  description: string | null;
+  coverId: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  photos: {
+    id: string;
+    filename: string;
+    originalName: string;
+    url: string;
+    thumbnailUrl: string;
+    takenAt: Date | null;
+    createdAt: Date;
+    updatedAt: Date;
+    order: number;
+  }[];
+};
 
-  if (!album) {
+async function getAlbum(slug: string) {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/albums/${slug}`, {
+    next: { revalidate: 3600 } // 1 hour cache
+  });
+  
+  if (!res.ok) {
+    if (res.status === 404) {
+      return null;
+    }
+    throw new Error('Failed to fetch album');
+  }
+  
+  return res.json();
+}
+
+export default async function AlbumDetailPage({ params }: Props) {
+  const data = await getAlbum(params.slug);
+  
+  if (!data) {
     notFound();
   }
+  
+  const album: Album = data.album;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

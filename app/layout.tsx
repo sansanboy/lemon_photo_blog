@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import Navbar from "@/components/Navbar";
-import { isAdmin } from "@/lib/auth";
+import AuthNavbar from "@/components/AuthNavbar";
+
+export const runtime = 'edge';
 
 export const metadata: Metadata = {
     title: "大军摄影作品集",
@@ -24,12 +25,11 @@ export default function RootLayout({
 }: {
     children: React.ReactNode;
 }) {
-    const admin = isAdmin();
-
+    // 在edge运行时中，我们使用客户端组件处理认证状态
     return (
         <html lang="zh-CN">
             <body className="min-h-screen bg-gradient-to-b from-gray-50 to-white text-gray-900">
-                <Navbar isAdmin={admin} />
+                <AuthNavbar />
                 <main className="max-w-6xl mx-auto px-4 py-10">{children}</main>
             </body>
         </html>

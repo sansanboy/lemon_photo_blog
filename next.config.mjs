@@ -8,33 +8,14 @@ const nextConfig = {
             },
         ],
     },
-    output: "standalone",
+    output: "standalone", // 使用standalone以在Vercel上部署
     
-    // 完全禁用输出文件追踪以避免循环引用
+    // 由于使用edge运行时和静态生成，不需要文件追踪
     outputFileTracing: false,
     
     experimental: {
-        serverComponentsExternalPackages: [
-            "sharp",
-            "exifr",
-            "@aws-sdk",
-            "argon2"
-        ],
+        // 由于我们使用API路由处理数据库操作，不需要serverComponentsExternalPackages
     },
-    
-    webpack: (config, { isServer }) => {
-        if (isServer) {
-            config.externals = [
-                ...(config.externals || []),
-                "sharp",
-                "exifr",
-                "@aws-sdk",
-                "argon2"
-            ];
-        }
-        
-        return config;
-    }
 };
 
 export default nextConfig;

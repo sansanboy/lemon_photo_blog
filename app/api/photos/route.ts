@@ -4,28 +4,61 @@ import { prisma } from "@/lib/db";
 import { getExifData } from "@/lib/exif";
 import { uploadToR2, generateThumbnail } from "@/lib/r2";
 
-export async function GET() {
+export const runtime = 'nodejs';
+
+export async function GET(request: NextRequest) {
   try {
-    requireAdmin();
-    
+    // 获取所有标签
+    const tags = await prisma.tag.findMany({ orderBy: { name: "asc" } });
+
+    // 根据标签过滤照片
     const photos = await prisma.photo.findMany({
-      orderBy: [
-        { takenAt: "desc" },
-        { createdAt: "desc" }
-      ],
+      where: {
+        tags: {
+          some: {
+            tag: {
+              name: request.nextUrl.searchParams.get('tag') || undefined,
+            },
+          },
+        },
+      },
+      orderBy: [{ takenAt: "desc" }, { createdAt: "desc" }],
       include: {
-        album: true,
         tags: {
           include: {
-            tag: true
-          }
-        }
-      }
+            tag: true,
+          },
+        },
+      },
     });
-    
-    return Response.json(photos);
+
+    // 格式化返回数据
+    const formattedPhotos = photos.map((photo) => ({
+      id: photo.id,
+      filename: photo.r2Key.split("/").pop() || "",
+      originalName: photo.title || "",
+      url: photo.url,
+      thumbnailUrl: photo.thumbnailUrl,
+      takenAt: photo.takenAt,
+      createdAt: photo.createdAt,
+      updatedAt: photo.updatedAt,
+      tags: photo.tags.map((photoTag) => ({
+        tag: {
+          id: photoTag.tag.id,
+          name: photoTag.tag.name,
+          createdAt: photoTag.tag.createdAt,
+          updatedAt: photoTag.tag.updatedAt,
+        },
+      })),
+    }));
+
+    return Response.json({
+      photos: formattedPhotos,
+      tags,
+    });
   } catch (error) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
+    console.error("API Error:", error);
+    return Response.json({ error: "Failed to fetch photos" }, { status: 500 });
   }
 }
 
@@ -56,45 +89,41 @@ export async function POST(request: NextRequest) {
     const arrayBuffer = await file.arrayBuffer();
     const exifData = await getExifData(Buffer.from(arrayBuffer));
 
-    // 创建照片记录
-    const photo = await prisma.photo.create({
-      data: {
-        title: title || null,
-        url: originalUrl,
-        r2Key: originalKey,
-        thumbnailUrl,
-        exif: exifData ? JSON.parse(JSON.stringify(exifData)) : undefined,
-        takenAt: exifData?.takenAt || new Date(),
-        albumId: albumId || null,
-        order: 0 // 默认顺序，后续可调整
-      }
+    // 使用事务来确保数据一致性
+    const photo = await prisma.$transaction(async (prisma) => {
+      // 创建或获取标签，并关联到照片
+      const connectOrCreateTags = tagsString
+        ? tagsString
+            .split(",")
+            .map((tag) => tag.trim())
+            .filter((tag) => tag)
+            .map((tagName) => ({
+              tag: {
+                connectOrCreate: {
+                  where: { name: tagName },
+                  create: { name: tagName },
+                },
+              },
+            }))
+        : [];
+
+      // 创建照片记录及其标签关联
+      return await prisma.photo.create({
+        data: {
+          title: title || null,
+          url: originalUrl,
+          r2Key: originalKey,
+          thumbnailUrl,
+          exif: exifData ? JSON.parse(JSON.stringify(exifData)) : undefined,
+          takenAt: exifData?.takenAt || new Date(),
+          albumId: albumId || null,
+          order: 0,
+          tags: {
+            create: connectOrCreateTags,
+          },
+        },
+      });
     });
-    
-    // 处理标签
-    if (tagsString) {
-      const tags = tagsString.split(",").map(tag => tag.trim()).filter(tag => tag);
-      
-      for (const tagName of tags) {
-        // 查找或创建标签
-        let tag = await prisma.tag.findUnique({
-          where: { name: tagName }
-        });
-        
-        if (!tag) {
-          tag = await prisma.tag.create({
-            data: { name: tagName }
-          });
-        }
-        
-        // 关联照片和标签
-        await prisma.tagOnPhoto.create({
-          data: {
-            photoId: photo.id,
-            tagId: tag.id
-          }
-        });
-      }
-    }
     
     return Response.json(photo);
   } catch (error) {

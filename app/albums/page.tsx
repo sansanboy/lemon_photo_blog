@@ -1,19 +1,52 @@
-import { prisma } from "@/lib/db";
 import Link from "next/link";
 
-export const dynamic = "force-dynamic";
+export const dynamic = "force-static";
+
+type Album = {
+  id: string;
+  title: string;
+  slug: string;
+  description: string | null;
+  coverId: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  cover: {
+    id: string;
+    url: string;
+    filename: string;
+    originalName: string;
+    thumbnailUrl: string;
+    takenAt: Date | null;
+    createdAt: Date;
+    updatedAt: Date;
+  } | null;
+  photos: {
+    id: string;
+    url: string;
+    filename: string;
+    originalName: string;
+    thumbnailUrl: string;
+    takenAt: Date | null;
+    createdAt: Date;
+    updatedAt: Date;
+    order: number;
+  }[];
+};
+
+async function getAlbums() {
+  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/albums`, {
+    next: { revalidate: 3600 } // 1 hour cache
+  });
+  
+  if (!res.ok) {
+    throw new Error('Failed to fetch albums');
+  }
+  
+  return res.json();
+}
 
 export default async function AlbumsPage() {
-  const albums = await prisma.album.findMany({
-    orderBy: { createdAt: "desc" },
-    include: {
-      cover: true,
-      photos: {
-        orderBy: [{ order: "asc" }, { takenAt: "desc" }, { createdAt: "desc" }],
-        take: 1
-      }
-    }
-  });
+  const { albums } = await getAlbums();
 
   return (
     <div className="max-w-6xl mx-auto px-4">
