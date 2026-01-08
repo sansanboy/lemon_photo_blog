@@ -28,7 +28,7 @@
         "@types/react": "^18",
         "@types/react-dom": "^18",
         "autoprefixer": "^10.4.16",
-        "eslint": "9.39.2",
+        "eslint": "^8.57.0",
         "eslint-config-next": "14.2.8",
         "postcss": "^8.4.31",
         "prisma": "^4.11.0",
