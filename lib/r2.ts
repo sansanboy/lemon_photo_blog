@@ -1,6 +1,5 @@
 import { PutObjectCommand, S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import sharp from "sharp";
 import { Readable } from "stream";
 
 // 从环境变量获取R2配置
@@ -116,6 +115,9 @@ export async function generateThumbnail(
     throw new Error("Unsupported file type for thumbnail generation");
   }
 
+  // 动态导入sharp库，以解决Vercel部署时的兼容性问题
+  const sharp = (await import('sharp')).default;
+  
   // 使用sharp生成缩略图
   return await sharp(buffer)
     .resize(300, 300, { fit: "inside", withoutEnlargement: true })
