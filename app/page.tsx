@@ -35,6 +35,8 @@ async function getPhotos({ tag }: { tag?: string } = {}) {
   if (tag) params.append('tag', tag);
   params.append('status', 'PUBLISHED'); // 只获取已发布的照片
   const queryString = params.toString();
+  console.log(queryString);
+  console.log(new URL(`/api/photos?${queryString}`, process.env.NEXT_PUBLIC_BASE_URL || process.env.VERCEL_URL || 'http://localhost:3000').toString());
   
   const res = await fetch(new URL(`/api/photos?${queryString}`, process.env.NEXT_PUBLIC_BASE_URL || process.env.VERCEL_URL || 'http://localhost:3000').toString(), {
     next: { revalidate: 3600 } // 1 hour cache

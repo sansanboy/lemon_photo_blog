@@ -10,7 +10,7 @@ export const metadata: Metadata = {
     openGraph: {
         title: "大军摄影作品集",
         description: "浏览高质量摄影作品，相册与标签分类。",
-        url: "https://example.com",
+        url: "https://photos.dajun.info",
         type: "website",
     },
     twitter: {
