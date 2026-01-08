@@ -177,9 +177,9 @@ export async function GET(request: NextRequest) {
         const connectOrCreateTags = tagsString
           ? tagsString
               .split(",")
-              .map((tag) => tag.trim())
-              .filter((tag) => tag)
-              .map((tagName) => ({
+              .map((tag: string) => tag.trim())
+              .filter((tag: string) => tag)
+              .map((tagName: string) => ({
                 tag: {
                   connectOrCreate: {
                     where: { name: tagName },
@@ -223,47 +223,52 @@ export async function GET(request: NextRequest) {
         return Response.json({ error: "Invalid status value" }, { status: 400 });
       }
 
-    // 使用事务来确保数据一致性
-    const photo = await prisma.$transaction(async (tx) => {
-      // 创建或获取标签，并关联到照片
-      const connectOrCreateTags = tags
-        ? tags
-            .split(",")
-            .map((tag) => tag.trim())
-            .filter((tag) => tag)
-            .map((tagName) => ({
-              tag: {
-                connectOrCreate: {
-                  where: { name: tagName },
-                  create: { name: tagName },
-                },
-              },
-            }))
-        : [];
+      // 使用事务来确保数据一致性
+      try {
+        const photo = await prisma.$transaction(async (tx) => {
+          // 创建或获取标签，并关联到照片
+          const connectOrCreateTags = tags
+            ? tags
+                .split(",")
+                .map((tag: string) => tag.trim())
+                .filter((tag: string) => tag)
+                .map((tagName: string) => ({
+                  tag: {
+                    connectOrCreate: {
+                      where: { name: tagName },
+                      create: { name: tagName },
+                    },
+                  },
+                }))
+            : [];
 
-      // 创建照片记录及其标签关联
-      return await tx.photo.create({
-        data: {
-          title: title || null,
-          url,
-          r2Key: key,
-          thumbnailUrl,
-          exif: exifData ? JSON.parse(JSON.stringify(exifData)) : undefined,
-          takenAt: exifData?.takenAt || new Date(),
-          albumId: albumId || null,
-          status: statusParam as "DRAFT" | "PUBLISHED" | "ARCHIVED",
-          order: 0,
-          tags: {
-            create: connectOrCreateTags,
-          },
-        },
-      });
-    });
-    
-    return Response.json(photo);
+          // 创建照片记录及其标签关联
+          return await tx.photo.create({
+            data: {
+              title: title || null,
+              url,
+              r2Key: key,
+              thumbnailUrl,
+              exif: exifData ? JSON.parse(JSON.stringify(exifData)) : undefined,
+              takenAt: exifData?.takenAt || new Date(),
+              albumId: albumId || null,
+              status: statusParam as "DRAFT" | "PUBLISHED" | "ARCHIVED",
+              order: 0,
+              tags: {
+                create: connectOrCreateTags,
+              },
+            },
+          });
+        });
+        return Response.json(photo);
+      } catch (error) {
+        console.error("Save photo error:", error);
+        return Response.json({ error: "Failed to save photo" }, { status: 500 });
+      }
+    }
   } catch (error) {
-    console.error("Save photo error:", error);
-    return Response.json({ error: "Failed to save photo" }, { status: 500 });
+    console.error("API Error:", error);
+    return Response.json({ error: "Failed to upload photo" }, { status: 500 });
   }
 }
 
