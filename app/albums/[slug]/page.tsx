@@ -1,5 +1,28 @@
 import { notFound } from "next/navigation";
 import { PhotoGrid } from "@/components/PhotoGrid";
+import { headers } from "next/headers";
+
+export const revalidate = 3600;
+
+function getBaseUrl() {
+  const headersList = headers();
+  const host = headersList.get('host');
+  const protocol = headersList.get('x-forwarded-proto') || 'http';
+
+  if (host) {
+    return `${protocol}://${host}`;
+  }
+
+  if (process.env.NEXT_PUBLIC_BASE_URL) {
+    return process.env.NEXT_PUBLIC_BASE_URL;
+  }
+
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+
+  return 'http://localhost:3000';
+}
 
 type Props = {
   params: { slug: string };
@@ -23,22 +46,38 @@ type Album = {
 };
 
 async function getAlbum(slug: string) {
-  const res = await fetch(new URL(`/api/albums/${slug}`, process.env.NEXT_PUBLIC_BASE_URL || process.env.VERCEL_URL || 'http://localhost:3000').toString(), {
-    next: { revalidate: 3600 } // 1 hour cache
+  const baseUrl = getBaseUrl();
+  const res = await fetch(`${baseUrl}/api/albums/${slug}`, {
+    next: { revalidate: 3600 }
   });
-  
+
   if (!res.ok) {
     if (res.status === 404) {
       return null;
     }
-    throw new Error('Failed to fetch album');
+    console.error('Failed to fetch album:', res.status, res.statusText);
+    throw new Error(`Failed to fetch album: ${res.status} ${res.statusText}`);
   }
-  
+
   return res.json();
 }
 
 export default async function AlbumDetailPage({ params }: Props) {
-  const data = await getAlbum(params.slug);
+  let data;
+  
+  try {
+    data = await getAlbum(params.slug);
+  } catch (error) {
+    console.error('Error fetching album:', error);
+    return (
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center py-20">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">无法加载相册</h2>
+          <p className="text-gray-600">请稍后重试</p>
+        </div>
+      </div>
+    );
+  }
   
   if (!data) {
     notFound();

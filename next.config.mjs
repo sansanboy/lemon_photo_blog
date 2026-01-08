@@ -1,4 +1,3 @@
-/** @type {import('next').NextConfig} */
 const nextConfig = {
     images: {
         remotePatterns: [
@@ -8,13 +7,9 @@ const nextConfig = {
             },
         ],
     },
-    output: "standalone", // 使用standalone以在Vercel上部署
-    
-    // 由于使用edge运行时和静态生成，不需要文件追踪
-    outputFileTracing: false,
-    
+    output: "standalone",
     experimental: {
-        // 由于我们使用API路由处理数据库操作，不需要serverComponentsExternalPackages
+        serverComponentsExternalPackages: ["sharp"],
     },
 };
 

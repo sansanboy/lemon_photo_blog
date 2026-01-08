@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 import { getExifData } from "@/lib/exif";
 import { uploadToR2, generateThumbnail, deleteFromR2 } from "@/lib/r2";
 
-export const runtime = 'nodejs';
+export const runtime = 'nodejs'; // 必须使用nodejs运行时，因为使用了sharp库
 
 // 定义 API 响应类型
 type PhotoResponse = {

@@ -1,6 +1,27 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 
-export const dynamic = "force-static";
+export const revalidate = 3600;
+
+function getBaseUrl() {
+  const headersList = headers();
+  const host = headersList.get('host');
+  const protocol = headersList.get('x-forwarded-proto') || 'http';
+
+  if (host) {
+    return `${protocol}://${host}`;
+  }
+
+  if (process.env.NEXT_PUBLIC_BASE_URL) {
+    return process.env.NEXT_PUBLIC_BASE_URL;
+  }
+
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL}`;
+  }
+
+  return 'http://localhost:3000';
+}
 
 type Album = {
   id: string;
@@ -34,14 +55,15 @@ type Album = {
 };
 
 async function getAlbums() {
-  const res = await fetch(new URL('/api/albums', process.env.NEXT_PUBLIC_BASE_URL || process.env.VERCEL_URL || 'http://localhost:3000').toString(), {
-    next: { revalidate: 3600 } // 1 hour cache
+  const baseUrl = getBaseUrl();
+  const res = await fetch(`${baseUrl}/api/albums`, {
+    next: { revalidate: 3600 }
   });
-  
+
   if (!res.ok) {
     throw new Error('Failed to fetch albums');
   }
-  
+
   return res.json();
 }
 

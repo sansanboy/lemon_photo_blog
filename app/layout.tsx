@@ -1,24 +1,6 @@
-import type { Metadata } from "next";
 import "./globals.css";
 import AuthNavbar from "@/components/AuthNavbar";
 
-export const runtime = 'edge';
-
-export const metadata: Metadata = {
-    title: "大军摄影作品集",
-    description: "大军摄影个人作品展示与相册浏览",
-    openGraph: {
-        title: "大军摄影作品集",
-        description: "浏览高质量摄影作品，相册与标签分类。",
-        url: "https://photos.dajun.info",
-        type: "website",
-    },
-    twitter: {
-        card: "summary_large_image",
-        title: "大军摄影作品集",
-        description: "浏览高质量摄影作品，相册与标签分类。",
-    },
-};
 
 export default function RootLayout({
     children,

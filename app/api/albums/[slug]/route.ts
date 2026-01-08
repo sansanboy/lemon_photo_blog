@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/db";
 
-export const runtime = 'nodejs';
+export const runtime = 'nodejs'; // 使用nodejs运行时以保持一致性
 
 type Props = {
   params: { slug: string };

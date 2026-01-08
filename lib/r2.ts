@@ -1,6 +1,5 @@
 import { PutObjectCommand, S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { Readable } from "stream";
 
 // 从环境变量获取R2配置
 const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID;
@@ -23,7 +22,7 @@ export const r2Client = new S3Client({
   endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
   region: "auto",
   credentials: {
-    accessKeyId: R2_ACCESS_KEY_ID!,
+    accessKeyId: R2_ACCOUNT_ID!,
     secretAccessKey: R2_SECRET_ACCESS_KEY!,
   },
 });
@@ -60,16 +59,6 @@ export async function uploadToR2(
   } else if (file.buffer && file.buffer instanceof Buffer) {
     buffer = file.buffer;
     detectedContentType = detectedContentType || file.mimetype;
-  } else if (typeof file.stream === 'function') {
-    const stream = file.stream();
-    if (!Readable.isReadable(stream)) {
-      throw new Error("Provided stream is not readable");
-    }
-    const chunks: Buffer[] = [];
-    for await (const chunk of stream) {
-      chunks.push(chunk);
-    }
-    buffer = Buffer.concat(chunks);
   } else {
     throw new Error("Unsupported file type for upload");
   }
@@ -101,16 +90,6 @@ export async function generateThumbnail(
     buffer = Buffer.from(await file.arrayBuffer());
   } else if (file.buffer && file.buffer instanceof Buffer) {
     buffer = file.buffer;
-  } else if (typeof file.stream === 'function') {
-    const stream = file.stream();
-    if (!Readable.isReadable(stream)) {
-      throw new Error("Provided stream is not readable");
-    }
-    const chunks: Buffer[] = [];
-    for await (const chunk of stream) {
-      chunks.push(chunk);
-    }
-    buffer = Buffer.concat(chunks);
   } else {
     throw new Error("Unsupported file type for thumbnail generation");
   }

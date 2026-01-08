@@ -2,6 +2,8 @@ import { NextRequest } from "next/server";
 import { requireAdmin } from "@/lib/auth";
 import { getPresignedUrl } from "@/lib/r2";
 
+export const runtime = 'nodejs'; // 使用nodejs运行时，因为导入了包含sharp依赖的r2.ts模块
+
 export async function POST(request: NextRequest) {
   try {
     requireAdmin();
