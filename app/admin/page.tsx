@@ -178,7 +178,6 @@ export default function AdminPage() {
     }
   };
 
-  // 更新照片状态
   const updatePhotoStatus = async (photoId: string, newStatus: string) => {
     try {
       const response = await fetch("/api/photos", {
@@ -190,8 +189,7 @@ export default function AdminPage() {
       });
 
       if (response.ok) {
-        // 更新本地状态
-        setPhotos(photos.map(photo => 
+        setPhotos(photos.map(photo =>
           photo.id === photoId ? { ...photo, status: newStatus } : photo
         ));
         alert("照片状态更新成功！");
@@ -201,6 +199,34 @@ export default function AdminPage() {
     } catch (error) {
       console.error("更新状态错误:", error);
       alert("更新照片状态失败！");
+    }
+  };
+
+  const updatePhotoAlbum = async (photoId: string, newAlbumId: string) => {
+    try {
+      const response = await fetch("/api/photos", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ id: photoId, albumId: newAlbumId || null }),
+      });
+
+      if (response.ok) {
+        setPhotos(photos.map(photo => {
+          if (photo.id === photoId) {
+            const album = albums.find(a => a.id === newAlbumId);
+            return { ...photo, albumId: newAlbumId, album: album ? { id: album.id, title: album.title } : null };
+          }
+          return photo;
+        }));
+        alert("照片相册更新成功！");
+      } else {
+        alert("更新照片相册失败！");
+      }
+    } catch (error) {
+      console.error("更新相册错误:", error);
+      alert("更新照片相册失败！");
     }
   };
 
@@ -464,8 +490,19 @@ export default function AdminPage() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">{photo.title || "无标题"}</div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {photo.album?.title || "未分类"}
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <select
+                          value={photo.albumId || ""}
+                          onChange={(e) => updatePhotoAlbum(photo.id, e.target.value)}
+                          className="text-sm rounded px-2 py-1 border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+                        >
+                          <option value="">未分类</option>
+                          {albums.map(album => (
+                            <option key={album.id} value={album.id}>
+                              {album.title}
+                            </option>
+                          ))}
+                        </select>
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-500 max-w-xs">
                         {photo.tags.map((tag: any) => tag.tag.name).join(', ') || "无标签"}
