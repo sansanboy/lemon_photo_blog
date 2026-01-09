@@ -37,13 +37,21 @@ type TagResponse = {
 type ApiResponse = {
   photos: PhotoResponse[];
   tags: TagResponse[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
 };
 
 export async function GET(request: NextRequest) {
   try {
     const tag = request.nextUrl.searchParams.get('tag');
     const statusParam = request.nextUrl.searchParams.get('status');
-    
+    const page = parseInt(request.nextUrl.searchParams.get('page') || '1');
+    const pageSize = 20;
+
     // 获取所有标签
     const tags = await prisma.tag.findMany({ orderBy: { name: "asc" } });
 
@@ -58,7 +66,7 @@ export async function GET(request: NextRequest) {
         },
       };
     }
-    
+
     // 明确处理状态过滤：如果提供了status参数，验证并使用该值；否则默认只获取已发布的照片
     if (statusParam) {
       const validStatuses = ["DRAFT", "PUBLISHED", "ARCHIVED"];
@@ -72,38 +80,43 @@ export async function GET(request: NextRequest) {
       whereClause.status = 'PUBLISHED';
     }
 
-    // 根据标签和状态过滤照片，使用 select 明确指定所有需要的字段
-    const photos = await prisma.photo.findMany({
-      where: whereClause,
-      orderBy: [{ takenAt: "desc" }, { createdAt: "desc" }],
-      select: {
-        id: true,
-        r2Key: true,
-        title: true,
-        url: true,
-        thumbnailUrl: true,
-        takenAt: true,
-        createdAt: true,
-        updatedAt: true,
-        status: true,
-        album: {
-          select: {
-            id: true,
-            title: true,
-          }
-        },
-        tags: {
-          select: {
-            tag: {
-              select: {
-                id: true,
-                name: true,
+    // 获取总数和分页数据
+    const [photos, totalCount] = await Promise.all([
+      prisma.photo.findMany({
+        where: whereClause,
+        orderBy: [{ takenAt: "desc" }, { createdAt: "desc" }],
+        select: {
+          id: true,
+          r2Key: true,
+          title: true,
+          url: true,
+          thumbnailUrl: true,
+          takenAt: true,
+          createdAt: true,
+          updatedAt: true,
+          status: true,
+          album: {
+            select: {
+              id: true,
+              title: true,
+            }
+          },
+          tags: {
+            select: {
+              tag: {
+                select: {
+                  id: true,
+                  name: true,
+                }
               }
             }
           }
-        }
-      }
-    });
+        },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      prisma.photo.count({ where: whereClause })
+    ]);
 
     // 格式化返回数据
     const formattedPhotos = photos.map((photo) => ({
@@ -128,9 +141,16 @@ export async function GET(request: NextRequest) {
       })),
     }));
 
+    const totalPages = Math.ceil(totalCount / pageSize);
     const response: ApiResponse = {
       photos: formattedPhotos,
       tags,
+      pagination: {
+        page,
+        pageSize,
+        total: totalCount,
+        totalPages
+      }
     };
 
     return Response.json(response);

@@ -8,10 +8,15 @@ export async function GET() {
     const albums = await prisma.album.findMany({
       orderBy: { createdAt: "desc" },
       include: {
-        cover: true,
-        photos: {
-          orderBy: [{ order: "asc" }, { takenAt: "desc" }, { createdAt: "desc" }],
-          take: 1
+        cover: {
+          select: {
+            id: true,
+            url: true,
+            thumbnailUrl: true,
+            takenAt: true,
+            createdAt: true,
+            updatedAt: true,
+          }
         }
       }
     });

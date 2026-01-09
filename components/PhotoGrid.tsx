@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, memo } from "react";
 import Image from "next/image";
 import { createPortal } from "react-dom";
 
@@ -175,11 +175,16 @@ function Lightbox({ photos, currentIndex, isOpen, onClose, onNavigate }: Lightbo
                     onTouchMove={handleTouchMove}
                     onTouchEnd={handleTouchEnd}
                 >
-                    <img
-                        src={currentPhoto.url}
-                        alt={currentPhoto.title || "photograph"}
-                        className="max-w-full max-h-[90vh] md:max-h-[85vh] object-contain"
-                    />
+                     <Image
+                         src={currentPhoto.url}
+                         alt={currentPhoto.title || "photograph"}
+                         fill
+                         loading="eager"
+                         placeholder="blur"
+                         blurDataURL="data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg'%3e%3crect width='128' height='128' fill='%23E5E7EB'%3e%3c/svg%3e"
+                         className="max-w-full max-h-[90vh] md:max-h-[85vh] object-contain"
+                         priority
+                     />
 
                     <div className="museum-plaque-container px-4 md:px-8 py-3 md:py-4 flex-shrink-0">
                         <div className="museum-plaque">
@@ -250,7 +255,7 @@ function Lightbox({ photos, currentIndex, isOpen, onClose, onNavigate }: Lightbo
     return createPortal(lightboxContent, document.body);
 }
 
-export function PhotoGrid({ photos }: PhotoGridProps) {
+export const PhotoGrid = memo(function PhotoGrid({ photos }: PhotoGridProps) {
     const [lightboxOpen, setLightboxOpen] = useState(false);
     const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -294,11 +299,16 @@ export function PhotoGrid({ photos }: PhotoGridProps) {
                         <div className="wooden-frame">
                             <div className="inner-mat">
                                 <div className="relative aspect-[4/3] overflow-hidden">
-                                    <img
+                                     <Image
                                         src={photo.thumbnailUrl || photo.url}
                                         alt={photo.title || "photograph"}
+                                        width={640}
+                                        height={480}
+                                        loading="lazy"
+                                        placeholder="blur"
+                                        blurDataURL="data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg'%3e%3crect width='640' height='480'%3e%3crect fill='%23E5E7EB'/%3e%3c/svg%3e"
                                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                                    />
+                                     />
 
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
                                         {photo.title && (

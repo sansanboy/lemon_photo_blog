@@ -2,7 +2,7 @@ import { TagFilter } from "@/components/TagFilter";
 import { PhotoGrid } from "@/components/PhotoGrid";
 import { getPhotos, getTags, type Photo, type Tag } from "@/lib/photos";
 
-export const revalidate = 3600;
+export const revalidate = 1800;
 
 export default async function Home({
   searchParams,

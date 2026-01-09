@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { PhotoGrid } from "@/components/PhotoGrid";
 import { getAlbumBySlug } from "@/lib/photos";
 
-export const revalidate = 3600;
+export const revalidate = 1800;
 
 type Props = {
   params: { slug: string };

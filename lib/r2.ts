@@ -137,6 +137,9 @@ export async function getPresignedUrl(key: string, expiresIn: number = 3600) {
   const command = new PutObjectCommand({
     Bucket: R2_BUCKET,
     Key: key,
+    Body: buffer,
+    ContentType: detectedContentType || 'application/octet-stream',
+    CacheControl: 'public, max-age=31536000, immutable',
   });
 
   return await getSignedUrl(r2Client, command, { expiresIn });

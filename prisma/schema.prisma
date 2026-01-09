@@ -16,6 +16,9 @@ model Album {
   updatedAt DateTime @updatedAt
   cover     Photo?   @relation("AlbumCover", fields: [coverId], references: [id])
   photos    Photo[]  @relation("AlbumPhotos")
+
+  @@index([createdAt(sort: Desc)])
+  @@index([slug])
 }
 
 model Photo {
@@ -35,6 +38,11 @@ model Photo {
   albumCover   Album?       @relation("AlbumCover")
   album        Album?       @relation("AlbumPhotos", fields: [albumId], references: [id])
   tags         TagOnPhoto[]
+
+  @@index([takenAt(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
+  @@index([albumId])
+  @@index([status])
 }
 
 model Tag {
@@ -50,6 +58,8 @@ model TagOnPhoto {
   tag     Tag    @relation(fields: [tagId], references: [id])
 
   @@id([photoId, tagId])
+  @@index([photoId])
+  @@index([tagId])
 }
 
 model Admin {
