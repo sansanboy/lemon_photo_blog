@@ -12,7 +12,8 @@ export default async function AlbumDetailPage({ params }: Props) {
   let data;
 
   try {
-    data = await getAlbumBySlug(params.slug);
+    const decodedSlug = decodeURIComponent(params.slug);
+    data = await getAlbumBySlug(decodedSlug);
   } catch (error) {
     console.error('Error fetching album:', error);
     return (

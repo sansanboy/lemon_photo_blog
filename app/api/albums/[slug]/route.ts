@@ -8,8 +8,10 @@ type Props = {
 
 export async function GET(request: Request, { params }: Props) {
   try {
+    // 解码 slug 以支持中文字符
+    const decodedSlug = decodeURIComponent(params.slug);
     const album = await prisma.album.findUnique({
-      where: { slug: params.slug },
+      where: { slug: decodedSlug },
       include: {
         photos: {
           orderBy: [{ order: "asc" }, { takenAt: "desc" }, { createdAt: "desc" }]
