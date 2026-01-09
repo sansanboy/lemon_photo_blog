@@ -27,9 +27,16 @@ export default function AuthNavbar() {
       <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
         <Link
           href="/"
-          className="text-lg font-semibold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent hover:opacity-90 transition-opacity"
+          className="flex items-center gap-3 hover:opacity-90 transition-opacity"
         >
-          大军摄影作品集
+          <img
+            src="/logo/apple-touch-icon.png"
+            alt="大军摄影 Logo"
+            className="w-10 h-10 md:w-12 md:h-12 rounded-lg shadow-md"
+          />
+          <span className="text-lg md:text-xl font-semibold bg-gradient-to-r from-[#6B5344] to-[#A69270] bg-clip-text text-transparent">
+            大军摄影作品集
+          </span>
         </Link>
         <nav className="flex items-center gap-2 text-sm">
           <Link

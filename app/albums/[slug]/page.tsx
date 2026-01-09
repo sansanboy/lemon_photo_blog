@@ -18,8 +18,8 @@ export default async function AlbumDetailPage({ params }: Props) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center py-20">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">无法加载相册</h2>
-          <p className="text-gray-600">请稍后重试</p>
+          <h2 className="text-2xl font-bold text-[#4A3828] mb-4">无法加载相册</h2>
+          <p className="text-[#A69270]">请稍后重试</p>
         </div>
       </div>
     );
