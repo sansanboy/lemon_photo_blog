@@ -639,16 +639,18 @@ body {
 }
 
 .museum-plaque-exif-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 6px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
   font-family: 'Georgia', 'Cambria', 'Times New Roman', serif;
 }
 
 .museum-plaque-exif-item {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 6px;
+  white-space: nowrap;
 }
 
 .museum-plaque-exif-label {
@@ -686,8 +688,12 @@ body {
   }
 
   .museum-plaque-exif-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 4px 12px;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .museum-plaque-exif-item {
+    flex-wrap: nowrap;
   }
 
   .museum-plaque-exif-label {

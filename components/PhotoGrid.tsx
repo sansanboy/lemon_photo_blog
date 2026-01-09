@@ -181,8 +181,8 @@ function Lightbox({ photos, currentIndex, isOpen, onClose, onNavigate }: Lightbo
                                             })}
                                         </p>
                                     )}
-                                    {exifData && (exifData.camera || exifData.lens) && (
-                                        <div className="museum-plaque-camera-info">
+                                    {exifData && (
+                                        <div className="museum-plaque-exif-grid">
                                             {exifData.camera && (
                                                 <div className="museum-plaque-exif-item">
                                                     <span className="museum-plaque-exif-label">Camera</span>
@@ -195,13 +195,6 @@ function Lightbox({ photos, currentIndex, isOpen, onClose, onNavigate }: Lightbo
                                                     <span className="museum-plaque-exif-value">{exifData.lens}</span>
                                                 </div>
                                             )}
-                                        </div>
-                                    )}
-                                    {exifData && (
-                                        <div className="museum-plaque-divider"></div>
-                                    )}
-                                    {exifData && (
-                                        <div className="museum-plaque-exif-grid">
                                             {exifData.aperture && (
                                                 <div className="museum-plaque-exif-item">
                                                     <span className="museum-plaque-exif-label">Aperture</span>
