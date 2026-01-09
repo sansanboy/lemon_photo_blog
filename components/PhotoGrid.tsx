@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
 import { createPortal } from "react-dom";
 
@@ -45,6 +45,8 @@ type LightboxProps = {
 function Lightbox({ photos, currentIndex, isOpen, onClose, onNavigate }: LightboxProps) {
     const [mounted, setMounted] = useState(false);
     const currentPhoto = photos[currentIndex];
+    const touchStartX = useRef<number>(0);
+    const touchEndX = useRef<number>(0);
 
     useEffect(() => {
         setMounted(true);
@@ -61,6 +63,24 @@ function Lightbox({ photos, currentIndex, isOpen, onClose, onNavigate }: Lightbo
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, [isOpen, onClose, onNavigate]);
+
+    const handleTouchStart = useCallback((e: React.TouchEvent) => {
+        touchStartX.current = e.changedTouches[0].screenX;
+    }, []);
+
+    const handleTouchMove = useCallback((e: React.TouchEvent) => {
+        touchEndX.current = e.changedTouches[0].screenX;
+    }, []);
+
+    const handleTouchEnd = useCallback(() => {
+        const swipeThreshold = 50;
+        const swipeDistance = touchStartX.current - touchEndX.current;
+
+        if (Math.abs(swipeDistance) > swipeThreshold) {
+            const direction = swipeDistance > 0 ? "next" : "prev";
+            onNavigate(direction);
+        }
+    }, [onNavigate]);
 
     if (!isOpen || !currentPhoto || !mounted) return null;
 
@@ -97,7 +117,8 @@ function Lightbox({ photos, currentIndex, isOpen, onClose, onNavigate }: Lightbo
     rounded-full
     transition-all hover:scale-110
     museum-nav-button
-    z-[10000] left-4 "
+    z-[10000] left-4 
+    hidden md:flex"
                 aria-label="Previous photo"
             >
                 <svg
@@ -124,7 +145,8 @@ function Lightbox({ photos, currentIndex, isOpen, onClose, onNavigate }: Lightbo
     rounded-full
     transition-all hover:scale-110
     museum-nav-button
-    z-[10000]  right-4 "
+    z-[10000]  right-4 
+    hidden md:flex"
                 aria-label="Next photo"
             >
                 <svg
@@ -147,81 +169,76 @@ function Lightbox({ photos, currentIndex, isOpen, onClose, onNavigate }: Lightbo
             </div>
 
             <div className="h-full overflow-y-auto overflow-x-hidden">
-                <div className="min-h-full flex flex-col items-center justify-center px-4 py-12">
-                    <div className="flex flex-col items-center gap-2">
-                        <div className="relative max-w-[85vw] px-4 md:px-8 pt-6 pb-1 flex-shrink-0">
-                            <div className="museum-frame-shadow">
-                                <div className="museum-frame">
-                                    <div className="museum-mat">
-                                        <img
-                                            src={currentPhoto.url}
-                                            alt={currentPhoto.title || "photograph"}
-                                            className="max-w-full max-h-[75vh] object-contain"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                <div
+                    className="min-h-full flex flex-col items-center justify-center"
+                    onTouchStart={handleTouchStart}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
+                >
+                    <img
+                        src={currentPhoto.url}
+                        alt={currentPhoto.title || "photograph"}
+                        className="max-w-full max-h-[90vh] md:max-h-[85vh] object-contain"
+                    />
 
-                        <div className="museum-plaque-container px-4 md:px-8 pt-0 pb-3 flex-shrink-0">
-                            <div className="museum-plaque">
-                                <div className="museum-plaque-brass-border"></div>
-                                <div className="museum-plaque-content">
-                                    {currentPhoto.title && (
-                                        <h3 className="museum-plaque-title">
-                                            {currentPhoto.title}
-                                        </h3>
-                                    )}
-                                    {currentPhoto.takenAt && (
-                                        <p className="museum-plaque-date">
-                                            {new Date(currentPhoto.takenAt).toLocaleDateString("zh-CN", {
-                                                year: "numeric",
-                                                month: "long",
-                                                day: "numeric",
-                                            })}
-                                        </p>
-                                    )}
-                                    {exifData && (
-                                        <div className="museum-plaque-exif-grid">
-                                            {exifData.camera && (
-                                                <div className="museum-plaque-exif-item">
-                                                    <span className="museum-plaque-exif-label">Camera</span>
-                                                    <span className="museum-plaque-exif-value">{exifData.camera}</span>
-                                                </div>
-                                            )}
-                                            {exifData.lens && (
-                                                <div className="museum-plaque-exif-item">
-                                                    <span className="museum-plaque-exif-label">Lens</span>
-                                                    <span className="museum-plaque-exif-value">{exifData.lens}</span>
-                                                </div>
-                                            )}
-                                            {exifData.aperture && (
-                                                <div className="museum-plaque-exif-item">
-                                                    <span className="museum-plaque-exif-label">Aperture</span>
-                                                    <span className="museum-plaque-exif-value">f/{exifData.aperture}</span>
-                                                </div>
-                                            )}
-                                            {exifData.shutter && (
-                                                <div className="museum-plaque-exif-item">
-                                                    <span className="museum-plaque-exif-label">Shutter</span>
-                                                    <span className="museum-plaque-exif-value">{exifData.shutter}s</span>
-                                                </div>
-                                            )}
-                                            {exifData.iso && (
-                                                <div className="museum-plaque-exif-item">
-                                                    <span className="museum-plaque-exif-label">ISO</span>
-                                                    <span className="museum-plaque-exif-value">{exifData.iso}</span>
-                                                </div>
-                                            )}
-                                            {exifData.focalLength && (
-                                                <div className="museum-plaque-exif-item">
-                                                    <span className="museum-plaque-exif-label">Focal Length</span>
-                                                    <span className="museum-plaque-exif-value">{exifData.focalLength}mm</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
+                    <div className="museum-plaque-container px-4 md:px-8 py-3 md:py-4 flex-shrink-0">
+                        <div className="museum-plaque">
+                            <div className="museum-plaque-brass-border"></div>
+                            <div className="museum-plaque-content">
+                                {currentPhoto.title && (
+                                    <h3 className="museum-plaque-title">
+                                        {currentPhoto.title}
+                                    </h3>
+                                )}
+                                {currentPhoto.takenAt && (
+                                    <p className="museum-plaque-date">
+                                        {new Date(currentPhoto.takenAt).toLocaleDateString("zh-CN", {
+                                            year: "numeric",
+                                            month: "long",
+                                            day: "numeric",
+                                        })}
+                                    </p>
+                                )}
+                                {exifData && (
+                                    <div className="museum-plaque-exif-grid">
+                                        {exifData.camera && (
+                                            <div className="museum-plaque-exif-item">
+                                                <span className="museum-plaque-exif-label">Camera</span>
+                                                <span className="museum-plaque-exif-value">{exifData.camera}</span>
+                                            </div>
+                                        )}
+                                        {exifData.lens && (
+                                            <div className="museum-plaque-exif-item">
+                                                <span className="museum-plaque-exif-label">Lens</span>
+                                                <span className="museum-plaque-exif-value">{exifData.lens}</span>
+                                            </div>
+                                        )}
+                                        {exifData.aperture && (
+                                            <div className="museum-plaque-exif-item">
+                                                <span className="museum-plaque-exif-label">Aperture</span>
+                                                <span className="museum-plaque-exif-value">f/{exifData.aperture}</span>
+                                            </div>
+                                        )}
+                                        {exifData.shutter && (
+                                            <div className="museum-plaque-exif-item">
+                                                <span className="museum-plaque-exif-label">Shutter</span>
+                                                <span className="museum-plaque-exif-value">{exifData.shutter}s</span>
+                                            </div>
+                                        )}
+                                        {exifData.iso && (
+                                            <div className="museum-plaque-exif-item">
+                                                <span className="museum-plaque-exif-label">ISO</span>
+                                                <span className="museum-plaque-exif-value">{exifData.iso}</span>
+                                            </div>
+                                        )}
+                                        {exifData.focalLength && (
+                                            <div className="museum-plaque-exif-item">
+                                                <span className="museum-plaque-exif-label">Focal Length</span>
+                                                <span className="museum-plaque-exif-value">{exifData.focalLength}mm</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>

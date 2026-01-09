@@ -670,6 +670,14 @@ body {
 }
 
 @media (max-width: 768px) {
+  .museum-frame {
+    padding: 12px;
+  }
+
+  .museum-mat {
+    padding: 18px;
+  }
+
   .museum-plaque {
     padding: 10px 16px;
   }
