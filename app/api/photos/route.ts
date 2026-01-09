@@ -140,137 +140,136 @@ export async function GET(request: NextRequest) {
   }
 }
 
- export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
     requireAdmin();
 
     const contentType = request.headers.get("content-type") || "";
 
+    // ===============================
+    // multipart/form-data 上传图片
+    // ===============================
     if (contentType.includes("multipart/form-data")) {
       const formData = await request.formData();
       const file = formData.get("file") as File | null;
       const title = formData.get("title") as string;
       const albumId = formData.get("albumId") as string;
       const tagsString = formData.get("tags") as string;
-      const statusParam = formData.get("status") as string || "PUBLISHED";
+      const statusParam = (formData.get("status") as string) || "PUBLISHED";
 
-      if (!file) {
-        return Response.json({ error: "No file provided" }, { status: 400 });
-      }
+      if (!file) return Response.json({ error: "No file provided" }, { status: 400 });
 
       const validStatuses = ["DRAFT", "PUBLISHED", "ARCHIVED"];
-      if (!validStatuses.includes(statusParam)) {
+      if (!validStatuses.includes(statusParam))
         return Response.json({ error: "Invalid status value" }, { status: 400 });
-      }
 
-      const originalKey = `photos/${Date.now()}_${file.name}`;
+      // ===============================
+      // 1️⃣ 慢 IO: 上传文件 / 生成缩略图 / 解析 exif
+      // ===============================
+      const timestamp = Date.now();
+      const originalKey = `photos/${timestamp}_${file.name}`;
+      const thumbnailKey = `thumbnails/${timestamp}_${file.name}`;
+
       const originalUrl = await uploadToR2(originalKey, file);
-
-      const thumbnailKey = `thumbnails/${Date.now()}_${file.name}`;
       const thumbnailBuffer = await generateThumbnail(file);
       const thumbnailUrl = await uploadToR2(thumbnailKey, thumbnailBuffer, "image/jpeg");
-
       const arrayBuffer = await file.arrayBuffer();
       const exifData = await getExifData(Buffer.from(arrayBuffer));
 
-      const photo = await prisma.$transaction(async (tx) => {
-        const connectOrCreateTags = tagsString
-          ? tagsString
-              .split(",")
-              .map((tag: string) => tag.trim())
-              .filter((tag: string) => tag)
-              .map((tagName: string) => ({
-                tag: {
-                  connectOrCreate: {
-                    where: { name: tagName },
-                    create: { name: tagName },
-                  },
-                },
-              }))
-          : [];
+      // ===============================
+      // 2️⃣ 标签处理: upsert 幂等操作
+      // ===============================
+      const tagNames = tagsString
+        ? tagsString.split(",").map((t) => t.trim()).filter(Boolean)
+        : [];
 
-        return await tx.photo.create({
-          data: {
-            title: title || null,
-            url: originalUrl,
-            r2Key: originalKey,
-            thumbnailUrl,
-            exif: exifData ? JSON.parse(JSON.stringify(exifData)) : undefined,
-            takenAt: exifData?.takenAt || new Date(),
-            albumId: albumId || null,
-            status: statusParam as "DRAFT" | "PUBLISHED" | "ARCHIVED",
-            order: 0,
-            tags: {
-              create: connectOrCreateTags,
-            },
+      // 并发 upsert，每个 tag 独立，不依赖事务
+      const tags = await Promise.all(
+        tagNames.map((name) =>
+          prisma.tag.upsert({
+            where: { name },
+            update: {},
+            create: { name },
+          })
+        )
+      );
+
+      // ===============================
+      // 3️⃣ 创建 photo，直接关联 tags
+      // ===============================
+      const photo = await prisma.photo.create({
+        data: {
+          title: title || null,
+          url: originalUrl,
+          r2Key: originalKey,
+          thumbnailUrl,
+          exif: exifData ? JSON.parse(JSON.stringify(exifData)) : undefined,
+          takenAt: exifData?.takenAt || new Date(),
+          albumId: albumId || null,
+          status: statusParam as "DRAFT" | "PUBLISHED" | "ARCHIVED",
+          order: 0,
+          tags: {
+            create: tags.map((tag) => ({
+              tagId: tag.id,
+            })),
           },
-        });
+        },
       });
 
       return Response.json(photo);
-    } else {
-      const data = await request.json();
-      const { url, key, title, albumId, tags, thumbnailUrl, thumbnailKey, exifData } = data;
-
-      if (!url || !key) {
-        return Response.json({ error: "URL and key are required" }, { status: 400 });
-      }
-
-      const statusParam = data.status as string || "PUBLISHED";
-
-      const validStatuses = ["DRAFT", "PUBLISHED", "ARCHIVED"];
-      if (!validStatuses.includes(statusParam)) {
-        return Response.json({ error: "Invalid status value" }, { status: 400 });
-      }
-
-      // 使用事务来确保数据一致性
-      try {
-        const photo = await prisma.$transaction(async (tx) => {
-          // 创建或获取标签，并关联到照片
-          const connectOrCreateTags = tags
-            ? tags
-                .split(",")
-                .map((tag: string) => tag.trim())
-                .filter((tag: string) => tag)
-                .map((tagName: string) => ({
-                  tag: {
-                    connectOrCreate: {
-                      where: { name: tagName },
-                      create: { name: tagName },
-                    },
-                  },
-                }))
-            : [];
-
-          // 创建照片记录及其标签关联
-          return await tx.photo.create({
-            data: {
-              title: title || null,
-              url,
-              r2Key: key,
-              thumbnailUrl,
-              exif: exifData ? JSON.parse(JSON.stringify(exifData)) : undefined,
-              takenAt: exifData?.takenAt || new Date(),
-              albumId: albumId || null,
-              status: statusParam as "DRAFT" | "PUBLISHED" | "ARCHIVED",
-              order: 0,
-              tags: {
-                create: connectOrCreateTags,
-              },
-            },
-          });
-        });
-        return Response.json(photo);
-      } catch (error) {
-        console.error("Save photo error:", error);
-        return Response.json({ error: "Failed to save photo" }, { status: 500 });
-      }
     }
+
+    // ===============================
+    // application/json 上传分支
+    // ===============================
+    const data = await request.json();
+    const { url, key, title, albumId, tags, thumbnailUrl, exifData } = data;
+
+    if (!url || !key) return Response.json({ error: "URL and key are required" }, { status: 400 });
+
+    const statusParam = data.status || "PUBLISHED";
+    const validStatuses = ["DRAFT", "PUBLISHED", "ARCHIVED"];
+    if (!validStatuses.includes(statusParam))
+      return Response.json({ error: "Invalid status value" }, { status: 400 });
+
+    const tagNames = tags ? tags.split(",").map((t: string) => t.trim()).filter(Boolean) : [];
+
+    const tagRecords = await Promise.all(
+      tagNames.map((name: string) =>
+        prisma.tag.upsert({
+          where: { name },
+          update: {},
+          create: { name },
+        })
+      )
+    );
+
+    const photo = await prisma.photo.create({
+      data: {
+        title: title || null,
+        url,
+        r2Key: key,
+        thumbnailUrl,
+        exif: exifData ? JSON.parse(JSON.stringify(exifData)) : undefined,
+        takenAt: exifData?.takenAt || new Date(),
+        albumId: albumId || null,
+        status: statusParam as "DRAFT" | "PUBLISHED" | "ARCHIVED",
+        order: 0,
+        tags: {
+          create: tagRecords.map((tag) => ({
+            tagId: tag.id,
+          })),
+        },
+      },
+    });
+
+    return Response.json(photo);
   } catch (error) {
     console.error("API Error:", error);
     return Response.json({ error: "Failed to upload photo" }, { status: 500 });
   }
 }
+
 
 // 添加PUT方法来更新照片状态
 export async function PUT(request: NextRequest) {
