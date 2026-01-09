@@ -219,13 +219,12 @@ export async function POST(request: NextRequest) {
       return Response.json(photo);
     }
 
-    // ===============================
-    // application/json 上传分支
-    // ===============================
     const data = await request.json();
     const { url, key, title, albumId, tags, thumbnailUrl, exifData } = data;
 
-    if (!url || !key) return Response.json({ error: "URL and key are required" }, { status: 400 });
+    if (!url || !key || !thumbnailUrl) {
+      return Response.json({ error: "URL, key and thumbnailUrl are required" }, { status: 400 });
+    }
 
     const statusParam = data.status || "PUBLISHED";
     const validStatuses = ["DRAFT", "PUBLISHED", "ARCHIVED"];

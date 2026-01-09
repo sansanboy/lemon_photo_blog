@@ -6,11 +6,13 @@ import { useRouter } from "next/navigation";
 export default function AdminPage() {
   const router = useRouter();
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStage, setUploadStage] = useState<'idle' | 'uploading_original' | 'generating_thumbnail' | 'uploading_thumbnail' | 'extracting_exif' | 'saving_metadata'>('idle');
   const [formData, setFormData] = useState({
     title: "",
     albumId: "",
     tags: "",
-    status: "PUBLISHED", // 默认状态为已发布
+    status: "PUBLISHED",
     file: null as File | null
   });
   const [albums, setAlbums] = useState<any[]>([]);
@@ -18,8 +20,8 @@ export default function AdminPage() {
   const [loginForm, setLoginForm] = useState({ username: "", password: "" });
   const [error, setError] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [photos, setPhotos] = useState<any[]>([]); // 添加照片列表状态
-  const [activeTab, setActiveTab] = useState<'upload' | 'manage'>('upload'); // 添加标签页状态
+  const [photos, setPhotos] = useState<any[]>([]);
+  const [activeTab, setActiveTab] = useState<'upload' | 'manage'>('upload');
 
   // 检查登录状态
   useEffect(() => {
@@ -126,15 +128,14 @@ export default function AdminPage() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // 处理文件上传
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+      const MAX_SIZE = 30 * 1024 * 1024;
 
       if (file.size > MAX_SIZE) {
-        alert(`文件大小超过10MB，请选择更小的文件`);
-        e.target.value = ''; // 清空选择
+        alert(`文件大小超过30MB，请选择更小的文件`);
+        e.target.value = '';
         return;
       }
 
@@ -142,25 +143,224 @@ export default function AdminPage() {
     }
   };
 
+  const generateThumbnail = async (file: File): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+
+      img.onload = () => {
+        const maxSize = 300;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxSize) {
+            height *= maxSize / width;
+            width = maxSize;
+          }
+        } else {
+          if (height > maxSize) {
+            width *= maxSize / height;
+            height = maxSize;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        ctx?.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              resolve(blob);
+            } else {
+              reject(new Error('Failed to generate thumbnail'));
+            }
+          },
+          'image/jpeg',
+          0.8
+        );
+      };
+
+      img.onerror = () => reject(new Error('Failed to load image'));
+
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
+  const extractExif = async (file: File): Promise<any | null> => {
+    try {
+      const exifr = (await import('exifr')).default;
+      const exifData = await exifr.parse(file, true);
+
+      if (!exifData) {
+        return null;
+      }
+
+      const result: any = {
+        raw: exifData,
+        takenAt: null,
+        camera: null,
+        lens: null,
+        iso: null,
+        shutter: null,
+        aperture: null,
+        focalLength: null
+      };
+
+      if (exifData.Make && exifData.Model) {
+        result.camera = `${exifData.Make} ${exifData.Model}`;
+      } else if (exifData.Model) {
+        result.camera = exifData.Model;
+      }
+
+      if (exifData.LensModel) {
+        result.lens = exifData.LensModel;
+      }
+
+      if (typeof exifData.ISO === 'number') {
+        result.iso = exifData.ISO;
+      }
+
+      if (exifData.ShutterSpeedValue) {
+        const shutterValue = exifData.ShutterSpeedValue;
+        if (typeof shutterValue === 'number') {
+          const denominator = Math.round(1 / Math.pow(2, -shutterValue));
+          result.shutter = `1/${denominator}`;
+        } else {
+          result.shutter = shutterValue.toString();
+        }
+      } else if (exifData.ExposureTime) {
+        const exposureTime = exifData.ExposureTime;
+        if (typeof exposureTime === 'number') {
+          if (exposureTime < 1) {
+            result.shutter = `1/${Math.round(1 / exposureTime)}`;
+          } else {
+            result.shutter = exposureTime.toString();
+          }
+        } else {
+          result.shutter = exposureTime;
+        }
+      }
+
+      if (typeof exifData.ApertureValue === 'number') {
+        result.aperture = Math.round((Math.pow(2, exifData.ApertureValue / 2)) * 10) / 10;
+      } else if (typeof exifData.FNumber === 'number') {
+        result.aperture = Math.round(exifData.FNumber * 10) / 10;
+      }
+
+      if (typeof exifData.FocalLength === 'number') {
+        result.focalLength = exifData.FocalLength;
+      } else if (Array.isArray(exifData.FocalLength) && exifData.FocalLength.length >= 2) {
+        result.focalLength = Math.round(exifData.FocalLength[0] / exifData.FocalLength[1]);
+      }
+
+      if (exifData.DateTimeOriginal) {
+        result.takenAt = new Date(exifData.DateTimeOriginal);
+      } else if (exifData.DateTime) {
+        result.takenAt = new Date(exifData.DateTime);
+      } else if (exifData.CreateDate) {
+        result.takenAt = new Date(exifData.CreateDate);
+      }
+
+      return result;
+    } catch (error) {
+      console.error("读取EXIF数据时出错:", error);
+      return null;
+    }
+  };
+
+  const uploadFileToR2 = (file: File, presignedUrl: string): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const percentComplete = (event.loaded / event.total) * 100;
+          setUploadProgress(percentComplete);
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status === 200) {
+          resolve();
+        } else {
+          reject(new Error(`Upload failed: ${xhr.statusText}`));
+        }
+      };
+
+      xhr.onerror = () => {
+        reject(new Error('Upload failed'));
+      };
+
+      xhr.open('PUT', presignedUrl);
+      xhr.setRequestHeader('Content-Type', file.type);
+      xhr.send(file);
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.file) return;
 
     setUploading(true);
+    setUploadProgress(0);
+    setUploadStage('uploading_original');
 
     try {
       const file = formData.file;
 
-      const fileFormData = new FormData();
-      fileFormData.append('file', file);
-      if (formData.title) fileFormData.append('title', formData.title);
-      if (formData.albumId) fileFormData.append('albumId', formData.albumId);
-      if (formData.tags) fileFormData.append('tags', formData.tags);
-      fileFormData.append('status', formData.status);
+      setUploadStage('uploading_original');
+      const signResponse = await fetch('/api/photos/sign', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          filename: file.name,
+          contentType: file.type,
+          fileSize: file.size,
+        }),
+      });
+
+      if (!signResponse.ok) {
+        throw new Error('Failed to get presigned URLs');
+      }
+
+      const { originalPresignedUrl, originalKey, thumbnailPresignedUrl, thumbnailKey, originalUrl, thumbnailUrl } = await signResponse.json();
+
+      await uploadFileToR2(file, originalPresignedUrl);
+
+      setUploadStage('generating_thumbnail');
+      const thumbnailBlob = await generateThumbnail(file);
+      const thumbnailFile = new File([thumbnailBlob], file.name, { type: 'image/jpeg' });
+
+      setUploadStage('uploading_thumbnail');
+      setUploadProgress(0);
+      await uploadFileToR2(thumbnailFile, thumbnailPresignedUrl);
+
+      setUploadStage('extracting_exif');
+      const exifData = await extractExif(file);
+
+      setUploadStage('saving_metadata');
 
       const result = await fetch('/api/photos', {
         method: 'POST',
-        body: fileFormData
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          url: originalUrl,
+          key: originalKey,
+          title: formData.title,
+          albumId: formData.albumId,
+          tags: formData.tags,
+          thumbnailUrl,
+          exifData,
+          status: formData.status,
+        }),
       });
 
       if (result.ok) {
@@ -175,6 +375,8 @@ export default function AdminPage() {
       alert("照片上传失败！");
     } finally {
       setUploading(false);
+      setUploadStage('idle');
+      setUploadProgress(0);
     }
   };
 
@@ -442,6 +644,38 @@ export default function AdminPage() {
                   required
                 />
               </div>
+
+              {uploading && (
+                <div className="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="flex justify-between mb-2">
+                    <span className="text-sm font-medium text-blue-900">
+                      {uploadStage === 'uploading_original' && '上传原图...'}
+                      {uploadStage === 'generating_thumbnail' && '生成缩略图...'}
+                      {uploadStage === 'uploading_thumbnail' && '上传缩略图...'}
+                      {uploadStage === 'extracting_exif' && '提取EXIF数据...'}
+                      {uploadStage === 'saving_metadata' && '保存元数据...'}
+                    </span>
+                    <span className="text-sm font-medium text-blue-900">
+                      {uploadStage === 'uploading_original' || uploadStage === 'uploading_thumbnail'
+                        ? `${uploadProgress.toFixed(0)}%`
+                        : ''}
+                    </span>
+                  </div>
+                  {(uploadStage === 'uploading_original' || uploadStage === 'uploading_thumbnail') && (
+                    <div className="w-full bg-blue-200 rounded-full h-2">
+                      <div
+                        className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${uploadProgress}%` }}
+                      />
+                    </div>
+                  )}
+                  {(uploadStage === 'generating_thumbnail' || uploadStage === 'extracting_exif' || uploadStage === 'saving_metadata') && (
+                    <div className="w-full bg-blue-200 rounded-full h-2">
+                      <div className="bg-blue-600 h-2 rounded-full animate-pulse" style={{ width: '100%' }} />
+                    </div>
+                  )}
+                </div>
+              )}
 
               <button
                 type="submit"
